@@ -1,70 +1,67 @@
 class RestaurantsController < ApplicationController
-  before_action :set_restaurant, only: %i[ show edit update destroy ]
-
   # GET /restaurants or /restaurants.json
   def index
-    @restaurants = Restaurant.all
+    @restaurants = policy_scope(Restaurant) # call the RestaurantPolicy::Scope#resolve method
   end
 
   # GET /restaurants/1 or /restaurants/1.json
   def show
+    @restaurant = Restaurant.find(params[:id])
+
+    # `authorize` in this context means "Is the user allowed to show the @restaurant"
+    # it doesn't mean we are actually giving permission yet
+    authorize @restaurant
   end
 
   # GET /restaurants/new
   def new
     @restaurant = Restaurant.new
+    authorize @restaurant
   end
 
   # GET /restaurants/1/edit
   def edit
+    @restaurant = Restaurant.find(params[:id])
+    authorize @restaurant # whatever record we pass to the `authorize` will be accessible in the Policy under the `record` variable
+
+    # Custom implementation (without pundit)
+    # raise 'NotAuthorizedError' unless @restaurant.user == current_user
   end
 
   # POST /restaurants or /restaurants.json
   def create
     @restaurant = Restaurant.new(restaurant_params)
     @restaurant.user = current_user
-
-    respond_to do |format|
-      if @restaurant.save
-        format.html { redirect_to restaurant_url(@restaurant), notice: "Restaurant was successfully created." }
-        format.json { render :show, status: :created, location: @restaurant }
-      else
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: @restaurant.errors, status: :unprocessable_entity }
-      end
+    authorize @restaurant
+    
+    if @restaurant.save
+      redirect_to restaurant_url(@restaurant), notice: "Restaurant was successfully created."
+    else
+      render :new, status: :unprocessable_entity
     end
   end
 
   # PATCH/PUT /restaurants/1 or /restaurants/1.json
   def update
-    respond_to do |format|
-      if @restaurant.update(restaurant_params)
-        format.html { redirect_to restaurant_url(@restaurant), notice: "Restaurant was successfully updated." }
-        format.json { render :show, status: :ok, location: @restaurant }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @restaurant.errors, status: :unprocessable_entity }
-      end
+    @restaurant = Restaurant.find(params[:id])
+    
+    authorize @restaurant
+    if @restaurant.update(restaurant_params)
+      redirect_to restaurant_url(@restaurant), notice: "Restaurant was successfully updated."
+    else
+      render :edit, status: :unprocessable_entity
     end
   end
 
   # DELETE /restaurants/1 or /restaurants/1.json
   def destroy
+    @restaurant = Restaurant.find(params[:id])
     @restaurant.destroy!
 
-    respond_to do |format|
-      format.html { redirect_to restaurants_url, notice: "Restaurant was successfully destroyed." }
-      format.json { head :no_content }
-    end
+    redirect_to restaurants_url, notice: "Restaurant was successfully destroyed."
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_restaurant
-      @restaurant = Restaurant.find(params[:id])
-    end
-
-    # Only allow a list of trusted parameters through.
     def restaurant_params
       params.require(:restaurant).permit(:name)
     end

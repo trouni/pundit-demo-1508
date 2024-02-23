@@ -1,12 +1,8 @@
-<div id="<%= dom_id restaurant %>">
-  <p>
-    <strong>Name:</strong>
-    <%= restaurant.name %>
-  </p>
-
-  <p>
-    <strong>User:</strong>
-    <%= restaurant.user_id %>
-  </p>
-
-</div>
+<tr>
+  <td>
+    <%= link_to restaurant.name, restaurant_path(restaurant) %>
+  </td>
+  <td>
+    <%= restaurant.user.email %>
+  </td>
+</tr>
